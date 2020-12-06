@@ -1,24 +1,10 @@
-def binary_partition(path, lower_c, upper_c):
-    n = len(path)
-    k = 1 << (n - 1)
-    m = 1 << (n - 1)
-    for c in path[:-1]:
-        m = m >> 1
-        if c == lower_c:
-            k -= m
-        elif c == upper_c:
-            k += m
-        else:
-            assert c in (lower_c, upper_c)
-    c = path[-1]
-    if c == lower_c:
-        k -= 1
-    return k
+def parse_binary(s, zero, one):
+    return int(s.replace(zero, '0').replace(one, '1'), 2)
 
 
 def seat(boarding_pass):
-    r = binary_partition(boarding_pass[:7], 'F', 'B')
-    c = binary_partition(boarding_pass[7:], 'L', 'R')
+    r = parse_binary(boarding_pass[:7], 'F', 'B')
+    c = parse_binary(boarding_pass[7:], 'L', 'R')
     sid = r * 8 + c
     return r, c, sid
 
