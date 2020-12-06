@@ -1,6 +1,6 @@
 def sum_qs(f):
-    return sum(len(set.intersection(*(map(set, group.split('\n')))))
-               for group in f.read().strip().split('\n\n'))
+    return sum(len(set.intersection(*(map(set, g.split()))))
+               for g in f.read().split('\n\n'))
 
 
 def main():
