@@ -1,10 +1,9 @@
 example_expressions = [
     ('1 + (2 * 3) + (4 * (5 + 6))', 51),
-    ('1 + 2 * 3 + 4 * 5 + 6', 71),
-    ('2 * 3 + (4 * 5)', 26),
-    ('5 + (8 * 3 + 9 + 3 * 4 * 3)', 437),
-    ('5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))', 12240),
-    ('((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2', 13632),
+    ('2 * 3 + (4 * 5)', 46),
+    ('5 + (8 * 3 + 9 + 3 * 4 * 3)', 1445),
+    ('5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))', 669060),
+    ('((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2', 23340),
 ]
 
 
@@ -36,21 +35,19 @@ def evaluate(s):
     r = 0
     op = '+'
     while s:
-        # Read value
-        if s[0] == '(':
-            end = find_closing_paren(s)
-            v = evaluate(s[1:end].strip())
-            s = s[end + 1:].strip()
-        else:
-            v, s = read_number(s)
-
-        # Accumulate
+        # Iterate for +
         if op == '+':
-            # print(r, '+', v)
+            if s[0] == '(':
+                end = find_closing_paren(s)
+                v = evaluate(s[1:end].strip())
+                s = s[end + 1:].strip()
+            else:
+                v, s = read_number(s)
             r += v
+        # Recurse for *
         elif op == '*':
-            # print(r, '*', v)
-            r *= v
+            r *= evaluate(s)
+            s = ''
         else:
             assert False
 
