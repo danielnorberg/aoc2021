@@ -3,7 +3,7 @@ import re
 p = re.compile(r'(?P<ingredients>(?:(\w+)\s)+)\(contains (?P<allergens>\w+(?:, \w+)*)\)')
 
 
-def count_non_allergenic_ingredient_occurences(f):
+def compute_allergens(f):
     all_ingredients = []
     candidates = {}
     for l in f:
@@ -26,14 +26,15 @@ def count_non_allergenic_ingredient_occurences(f):
                 unfixed.remove(allergen)
                 break
     non_allergen_ingredients = set(all_ingredients) - set(fixed.values())
-    return sum(1 for ingredient in all_ingredients if ingredient in non_allergen_ingredients)
+    return (sum(1 for ingredient in all_ingredients if ingredient in non_allergen_ingredients),
+            ",".join(it[1] for it in sorted(fixed.items(), key=lambda it: it[0])))
 
 
 def main():
     with open('sample_input.txt') as f:
-        print(count_non_allergenic_ingredient_occurences(f))
+        print(compute_allergens(f))
     with open('input.txt') as f:
-        print(count_non_allergenic_ingredient_occurences(f))
+        print(compute_allergens(f))
 
 
 if __name__ == '__main__':
