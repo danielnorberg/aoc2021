@@ -154,6 +154,30 @@ class Tiles:
         for by in range(self.d):
             print(" ".join(str(board[(bx, by)][0]) for bx in range(self.d)))
 
+    def print_map(self, board):
+        def g(by, bx, y, x):
+            bc = (bx, by)
+            if bc not in board:
+                return ' '
+            tid, tr = board[bc]
+            tile = self.tiles[tid]
+            return get_transformed(tile, tr, y, x)
+
+        rows = []
+        for by in range(self.d):
+            for y in range(1, self.n - 1):
+                row = []
+                for bx in range(self.d):
+                    for x in range(1, self.n - 1):
+                        row.append(g(by, bx, y, x))
+                rows.append("".join(row))
+
+        expected_width = self.d * (self.n - 2)
+        assert len(rows) == expected_width
+        assert all(len(row) == expected_width for row in rows)
+        print("\n".join(rows))
+
+
     @cache
     def fit_lr(self, a, ra, b, rb):
         return fit_lr(self.tiles[a], ra, self.tiles[b], rb)
@@ -307,6 +331,8 @@ def main():
         tiles.print_board(board)
         print()
         print(tiles.calc_corners(board))
+        print()
+        tiles.print_map(board)
 
 
 if __name__ == '__main__':
