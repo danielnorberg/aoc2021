@@ -1,114 +1,125 @@
-from itertools import islice
+from itertools import islice, takewhile
 
-from sortedcontainers import SortedDict
+
+class Cup:
+    __slots__ = 'next', 'label'
+
+    def __init__(self, label):
+        self.label = label
+        self.next = None
+
+    def __repr__(self):
+        return '{} {}'.format(self.label, '->' if self.next is not None else ')')
+
+
+def remove(head, n):
+    cur = head
+    prev = None
+    for i in range(n):
+        prev = cur
+        cur = head.next
+    prev.next = cur.next
+    cur.next = None
+    return cur
+
+
+def insert(head, tail, cup):
+    cup.next = head.next
+    head.next = cup
+    if tail == head:
+        tail = cup
+        assert tail.next is None
+    return cup, tail
+
+
+def enumerate_labels(head):
+    head = head.next
+    while head:
+        yield head.label
+        head = head.next
+
+
+def print_cups(head):
+    return " ".join(str(label) for label in enumerate_labels(head))
+
+
+def assert_no_loop(head):
+    visited = set()
+    while head:
+        if head in visited:
+            assert False
+        visited.add(head)
+        head = head.next
+
+
+def assert_has_all_labels(head, labels):
+    if set(labels) != set(enumerate_labels(head)):
+        raise False
+
+
+def pop(head):
+    cup = head.next
+    head.next = cup.next
+    cup.next = None
+    return cup
 
 
 def play(labeling, number_cups, moves):
     labels = [int(c) for c in labeling]
-    max_label = max(labels)
-    labels.extend(range(max_label + 1, number_cups + 1))
-    index = {l: tuple(int(c) for c in '{:07}'.format(i)) for i, l in enumerate(labels)}
-    cups = SortedDict((k, l) for l, k in index.items())
-    for label, key in index.items():
-        v = cups[key]
-        assert v == label, "{} != {}".format(v, label)
+    for label in range(max(labels) + 1, number_cups + 1):
+        labels.append(label)
+
+    head = Cup(None)
+    index = {}
+    tail = head
+    for label in labels:
+        cup = Cup(label)
+        index[label] = cup
+        tail.next = cup
+        tail = cup
+
     min_label = min(labels)
     max_label = max(labels)
-    del labels
+
+    # assert_no_loop(head)
 
     for i in range(moves):
-        current_key, current_cup = cups.peekitem(0)
-        removed_cups = (cups.popitem(1)[1], cups.popitem(1)[1], cups.popitem(1)[1])
+        # print(print_cups(head))
+        # assert_has_all_labels(head, labels)
+        current = pop(head)
+        removed_cups = (pop(head), pop(head), pop(head))
+        removed_labels = tuple(cup.label for cup in removed_cups)
+        # assert_no_loop(head)
+        # assert_has_all_labels(head, set(labels) - set(removed_labels))
 
-        # Look up destination label
-        destination_label = current_cup - 1
+        destination_label = current.label - 1
         if destination_label < min_label:
             destination_label = max_label
-        while destination_label in removed_cups:
+        while destination_label in removed_labels:
             destination_label -= 1
             if destination_label < min_label:
                 destination_label = max_label
 
-        # decrement right key
-        # 0 8
-        # 0 8 -3  <--
-        # 0 8 -2  <--
-        # 0 8 -1  <--
-        # 0 8 0
-
-        # Increment left key
-        # 0 1
-        # 0 2    <--
-        # 0 3    <--
-        # 0 4    <--
-        # 0 5
-
-        # extend left key
-        # 0 1
-        # 0 1 0   <--
-        # 0 1 1   <--
-        # 0 1 2   <--
-        # 0 2
-
-        # increment prev suffix
-        # 0 1 2
-        # 0 1 3   <--
-        # 0 1 4   <--
-        # 0 1 5   <--
-        # 0 2
-
-        # Compute the appropriate keys to insert into the sorted list right after the "destination" cup
-        left_key = index[destination_label]
-        left_index = cups.index(left_key)
-        right_index = left_index + 1
-        if right_index == len(cups):
-            # destination is at end of list - increment left key
-            insert_keys = [left_key[:-1] + (left_key[-1] + d,) for d in (1, 2, 3)]
-        else:
-            # insert between two cups
-            right_key = cups.peekitem(left_index + 1)[0]
-            if len(left_key) < len(right_key):
-                # left key is shorter, decrement right key
-                insert_keys = [right_key[:-1] + (right_key[:-1] + d,) for d in (-3, -2, -1)]
-            elif len(left_key) == len(right_key):
-                # Keys are same length
-                if left_key[:-1] == right_key[:-1]:
-                    # Keys have same prefix
-                    ls = left_key[-1]
-                    rs = right_key[-1]
-                    if rs - ls < 4:
-                        # There is not space enough between the two key vectors to simply increment,
-                        # create new keys by extending the left one
-                        insert_keys = [left_key + (d,) for d in (0, 1, 2)]
-                    else:
-                        # There is space enough between the two key vectors - increment the left key
-                        insert_keys = [left_key[:-1] + (left_key[-1] + d,) for d in (1, 2, 3)]
-                else:
-                    # Keys have differing prefix - increment the left key
-                    insert_keys = [left_key[:-1] + (left_key[-1] + d,) for d in (1, 2, 3)]
-            elif len(left_key) > len(right_key):
-                # Keys have different length - increment the left key
-                insert_keys = [left_key[:-1] + (left_key[-1] + d,) for d in (1, 2, 3)]
-            else:
-                assert False
-
-        for removed_cup, key in zip(removed_cups, insert_keys):
-            cups[key] = removed_cup
-            index[removed_cup] = key
+        destination = index[destination_label]
+        for removed_cup in removed_cups:
+            destination, tail = insert(destination, tail, removed_cup)
+        # assert_no_loop(head)
+        # assert_has_all_labels(head, labels)
 
         # Move first cup to last
-        cups.popitem(0)
-        last_key = cups.peekitem(len(cups) - 1)[0]
-        next_last_key = last_key[:-1] + (last_key[-1] + 1,)
-        cups[next_last_key] = current_cup
-        index[current_cup] = next_last_key
+        # assert tail.next == None
+        tail.next = current
+        tail = current
+        assert tail.next is None
+        # assert_no_loop(head)
+        # assert_has_all_labels(head, labels)
 
-    one_key = index[1]
-    one_index = cups.index(one_key)
-    for i in range(one_index + 1, len(cups)):
-        yield cups.peekitem(i)[1]
-    for i in range(0, one_index):
-        yield cups.peekitem(i)[1]
+        if i % 100000 == 0:
+            print('{:.1%}'.format(i / moves))
+
+    # Yield cups after 1
+    yield from enumerate_labels(index[1])
+    yield from takewhile(lambda l: l != 1, enumerate_labels(head))
 
 
 def main():
@@ -121,7 +132,7 @@ def main():
     assert tuple(islice(play('389125467', 10 ** 6, 10 ** 7), 2)) == (934001, 159792)
 
     cups = tuple(islice(play('186524973', 10 ** 6, 10 ** 7), 2))
-    print(cups)
+    assert cups[0] * cups[1] == 111080192688
 
 
 if __name__ == '__main__':
